@@ -1,0 +1,2 @@
+When using this dataset please use the following citation and pay attention to the rights documented in rights.txt:
+Bender B, Soria R, Roig Juñent S A (2017). Colección Ornitológica del IADIZA-CCT CONICET Mendoza: IADIZA-COI. Ministerio de Ciencia, Tecnología e Innovación Productiva. Occurrence dataset https://doi.org/10.15468/rcvppj accessed via GBIF.org on 2026-02-17.
