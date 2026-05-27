@@ -1,6 +1,13 @@
-# ================ PUNTO 7A ============================
+import csv
+import os
 from datetime import datetime
 
+from cargardataset import cargar_dataset
+from ejercicio4 import agrupar_validaciones, inicio_registro, preparar_para_csv
+from validacion import _es_nulo, _obtener_valor
+
+
+# ================ PUNTO 7A ============================
 def obtener_fecha_hora():
     """
     Retorna la fecha y la hora actual en formato "YYYY-MM-DD HH:MM:SS"
@@ -9,8 +16,6 @@ def obtener_fecha_hora():
 
 
 # =============== PUNTO 7B ===============================
-import os
-
 def registrar_operacion(nombre_dataset, tipo_cambio, cantidad_registros, estado="ok"):
     """
     Registra un cambio que se realiza sobre un dataset en operations.log
@@ -31,13 +36,9 @@ def registrar_operacion(nombre_dataset, tipo_cambio, cantidad_registros, estado=
 
 
 # ================= PUNTO 7C ==============================
-import csv
-from inicializar_registro import inicio_registro
-from añadir_ID import preparar_para_csv
-from validar_registro import agrupar_validaciones
-from cargardataset import cargar_dataset
-
-def agregar_registro_simple(numero_dataset, tipo_dataset, carpeta_destino="processed_datasets"):
+def agregar_registro_simple(
+    numero_dataset, tipo_dataset, carpeta_destino="processed_datasets"
+):
     """
     Lee un dataset original, solicita un nuevo registro por teclado, lo valida y lo
     agrega al archivo en processed_datasets. Registra la operacion en el log.
@@ -51,7 +52,9 @@ def agregar_registro_simple(numero_dataset, tipo_dataset, carpeta_destino="proce
     separador = dataset["separador"]
 
     os.makedirs(carpeta_destino, exist_ok=True)
-    archivo_destino = os.path.join(carpeta_destino, os.path.basename(str(origen_dataset)))
+    archivo_destino = os.path.join(
+        carpeta_destino, os.path.basename(str(origen_dataset))
+    )
 
     with open(origen_dataset, "r", encoding="utf-8") as f:
         reader = csv.reader(f, delimiter=separador)
@@ -76,7 +79,9 @@ def agregar_registro_simple(numero_dataset, tipo_dataset, carpeta_destino="proce
 
     existe = os.path.exists(archivo_destino)
     with open(archivo_destino, "a", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=encabezados, delimiter=separador, extrasaction="ignore")
+        writer = csv.DictWriter(
+            f, fieldnames=encabezados, delimiter=separador, extrasaction="ignore"
+        )
         if not existe:
             writer.writeheader()
         writer.writerow(registro)
@@ -93,14 +98,7 @@ Funcion de actualizacion fue modificada para que
     - que indique la cantidad de registros afectados
 Se reutilizan las funciones que fueron creadas antes en el ejercicio 5
 """
-from validacion import (
-    validar_coordenadas,
-    validar_fechas,
-    validar_country_code,
-    validar_incertidumbre_coordenadas,
-    _es_nulo,
-    _obtener_valor,
-)
+
 
 def _leer_dataset(ruta_archivo, separador="\t", encoding="utf-8"):
     """
@@ -151,14 +149,31 @@ def buscar_registros(ruta_archivo, filtros, separador="\t", encoding="utf-8"):
     return resultados
 
 
-def actualizar_campo(ruta_archivo, ruta_salida, id_registro, nombre_columna, nuevo_valor, separador="\t", encoding="utf-8"):
+def actualizar_campo(
+    ruta_archivo,
+    ruta_salida,
+    id_registro,
+    nombre_columna,
+    nuevo_valor,
+    separador="\t",
+    encoding="utf-8",
+):
     """
     Actualiza el valor de un campo en el registro identificado por id_registro.
     """
-    return actualizar_campos(ruta_archivo, ruta_salida, id_registro, {nombre_columna: nuevo_valor}, separador, encoding)
+    return actualizar_campos(
+        ruta_archivo,
+        ruta_salida,
+        id_registro,
+        {nombre_columna: nuevo_valor},
+        separador,
+        encoding,
+    )
 
 
-def actualizar_campos(ruta_archivo, ruta_salida, id_registro, cambios, separador="\t", encoding="utf-8"):
+def actualizar_campos(
+    ruta_archivo, ruta_salida, id_registro, cambios, separador="\t", encoding="utf-8"
+):
     """
     Actualiza múltiples campos de un registro en una sola operación.
     """
@@ -183,7 +198,9 @@ def actualizar_campos(ruta_archivo, ruta_salida, id_registro, cambios, separador
 
     # == PUNTO 7D - Natalia ==
     if errores:
-        registrar_operacion(os.path.basename(ruta_archivo), "UPDATE", 0, "ERROR - " + str(errores))
+        registrar_operacion(
+            os.path.basename(ruta_archivo), "UPDATE", 0, "ERROR - " + str(errores)
+        )
     else:
         registrar_operacion(os.path.basename(ruta_archivo), "UPDATE", modificados)
 
@@ -221,6 +238,7 @@ def _validar_cambios(cambios, ruta_archivo, separador, encoding):
 
     if "countryCode" in cambios:
         from validacion import COUNTRY_CODES_VALIDOS
+
         codigo = cambios["countryCode"]
         if not _es_nulo(codigo) and codigo.strip().upper() not in COUNTRY_CODES_VALIDOS:
             errores.append(f"countryCode inválido: '{codigo}'")
@@ -238,8 +256,10 @@ def _validar_cambios(cambios, ruta_archivo, separador, encoding):
 
     for campo, valor in cambios.items():
         if "date" in campo.lower() and not _es_nulo(valor):
-            from validacion import _parsear_fecha
             from datetime import datetime
+
+            from validacion import _parsear_fecha
+
             fecha = _parsear_fecha(str(valor))
             if fecha is None:
                 errores.append(f"{campo}: formato de fecha inválido ('{valor}')")
@@ -249,14 +269,31 @@ def _validar_cambios(cambios, ruta_archivo, separador, encoding):
     return errores
 
 
-def actualizar_campo_con_validacion(ruta_archivo, ruta_salida, id_registro, nombre_columna, nuevo_valor, separador="\t", encoding="utf-8"):
+def actualizar_campo_con_validacion(
+    ruta_archivo,
+    ruta_salida,
+    id_registro,
+    nombre_columna,
+    nuevo_valor,
+    separador="\t",
+    encoding="utf-8",
+):
     """
     Actualiza un campo validando el nuevo valor antes de aplicar el cambio.
     """
-    return actualizar_campos_con_validacion(ruta_archivo, ruta_salida, id_registro, {nombre_columna: nuevo_valor}, separador, encoding)
+    return actualizar_campos_con_validacion(
+        ruta_archivo,
+        ruta_salida,
+        id_registro,
+        {nombre_columna: nuevo_valor},
+        separador,
+        encoding,
+    )
 
 
-def actualizar_campos_con_validacion(ruta_archivo, ruta_salida, id_registro, cambios, separador="\t", encoding="utf-8"):
+def actualizar_campos_con_validacion(
+    ruta_archivo, ruta_salida, id_registro, cambios, separador="\t", encoding="utf-8"
+):
     """
     Actualiza múltiples campos de un registro validando los nuevos valores.
     """
@@ -264,18 +301,29 @@ def actualizar_campos_con_validacion(ruta_archivo, ruta_salida, id_registro, cam
 
     if errores:
         # == PUNTO 7D - Natalia ==
-        registrar_operacion(os.path.basename(ruta_archivo), "UPDATE", 0, "ERROR - " + str(errores))
+        registrar_operacion(
+            os.path.basename(ruta_archivo), "UPDATE", 0, "ERROR - " + str(errores)
+        )
         return {
             "exito": False,
             "registros_modificados": 0,
             "errores": errores,
         }
 
-    return actualizar_campos(ruta_archivo, ruta_salida, id_registro, cambios, separador, encoding)
+    return actualizar_campos(
+        ruta_archivo, ruta_salida, id_registro, cambios, separador, encoding
+    )
 
 
 # ================= PUNTO 7E ==================================
-def eliminar_por_id(ruta_entrada, ruta_salida, id_buscado, nombre_columna="occurrenceID", separador="\t", encoding="utf-8"):
+def eliminar_por_id(
+    ruta_entrada,
+    ruta_salida,
+    id_buscado,
+    nombre_columna="occurrenceID",
+    separador="\t",
+    encoding="utf-8",
+):
     """
     Permite eliminar un registro específico de un dataset a partir de su identificador.
     Registra la operacion en el log.
@@ -283,9 +331,10 @@ def eliminar_por_id(ruta_entrada, ruta_salida, id_buscado, nombre_columna="occur
     encontrado = False
     registros_eliminados = 0
 
-    with open(ruta_entrada, encoding=encoding) as archivo_in, \
-         open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out:
-
+    with (
+        open(ruta_entrada, encoding=encoding) as archivo_in,
+        open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out,
+    ):
         lector = csv.reader(archivo_in, delimiter=separador)
         escritor = csv.writer(archivo_out, delimiter=separador)
 
@@ -307,22 +356,34 @@ def eliminar_por_id(ruta_entrada, ruta_salida, id_buscado, nombre_columna="occur
 
     if encontrado:
         print("Registro eliminado correctamente")
-        registrar_operacion(os.path.basename(ruta_entrada), "DELETE", registros_eliminados, "OK")
+        registrar_operacion(
+            os.path.basename(ruta_entrada), "DELETE", registros_eliminados, "OK"
+        )
     else:
         print("Error: no se encontró el ID especificado")
-        registrar_operacion(os.path.basename(ruta_entrada), "DELETE", 0, "ERROR - ID no encontrado")
+        registrar_operacion(
+            os.path.basename(ruta_entrada), "DELETE", 0, "ERROR - ID no encontrado"
+        )
 
 
-def eliminar_por_valores(ruta_entrada, ruta_salida, columna, valores_a_eliminar, separador="\t", encoding="utf-8"):
+def eliminar_por_valores(
+    ruta_entrada,
+    ruta_salida,
+    columna,
+    valores_a_eliminar,
+    separador="\t",
+    encoding="utf-8",
+):
     """
     Permite eliminar registros cuando el valor de una columna pertenece a una lista dada.
     Registra la operacion en el log.
     """
     registros_eliminados = 0
 
-    with open(ruta_entrada, encoding=encoding) as archivo_in, \
-         open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out:
-
+    with (
+        open(ruta_entrada, encoding=encoding) as archivo_in,
+        open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out,
+    ):
         lector = csv.reader(archivo_in, delimiter=separador)
         escritor = csv.writer(archivo_out, delimiter=separador)
 
@@ -333,7 +394,12 @@ def eliminar_por_valores(ruta_entrada, ruta_salida, columna, valores_a_eliminar,
             indice = columnas.index(columna)
         except ValueError:
             print("Error: la columna especificada no existe en el dataset")
-            registrar_operacion(os.path.basename(ruta_entrada), "DELETE", 0, "ERROR - columna no encontrada")
+            registrar_operacion(
+                os.path.basename(ruta_entrada),
+                "DELETE",
+                0,
+                "ERROR - columna no encontrada",
+            )
             return
 
         for fila in lector:
@@ -344,12 +410,27 @@ def eliminar_por_valores(ruta_entrada, ruta_salida, columna, valores_a_eliminar,
 
     print("Filtrado completado")
     if registros_eliminados > 0:
-        registrar_operacion(os.path.basename(ruta_entrada), "DELETE", registros_eliminados, "OK")
+        registrar_operacion(
+            os.path.basename(ruta_entrada), "DELETE", registros_eliminados, "OK"
+        )
     else:
-        registrar_operacion(os.path.basename(ruta_entrada), "DELETE", 0, f"ERROR - no se encontraron valores en {columna}")
+        registrar_operacion(
+            os.path.basename(ruta_entrada),
+            "DELETE",
+            0,
+            f"ERROR - no se encontraron valores en {columna}",
+        )
 
 
-def eliminar_por_condicion(ruta_entrada, ruta_salida, columna, operador, valor, separador="\t", encoding="utf-8"):
+def eliminar_por_condicion(
+    ruta_entrada,
+    ruta_salida,
+    columna,
+    operador,
+    valor,
+    separador="\t",
+    encoding="utf-8",
+):
     """
     Elimina registros que cumplen una condición dada.
     Registra la operacion en el log.
@@ -360,21 +441,28 @@ def eliminar_por_condicion(ruta_entrada, ruta_salida, columna, operador, valor, 
         try:
             valor_fila = float(valor_fila)
             valor = float(valor)
-        except:
+        except (ValueError, TypeError):
             pass
-        if operador == "==": return valor_fila == valor
-        elif operador == "!=": return valor_fila != valor
-        elif operador == ">": return valor_fila > valor
-        elif operador == ">=": return valor_fila >= valor
-        elif operador == "<": return valor_fila < valor
-        elif operador == "<=": return valor_fila <= valor
+        if operador == "==":
+            return valor_fila == valor
+        elif operador == "!=":
+            return valor_fila != valor
+        elif operador == ">":
+            return valor_fila > valor
+        elif operador == ">=":
+            return valor_fila >= valor
+        elif operador == "<":
+            return valor_fila < valor
+        elif operador == "<=":
+            return valor_fila <= valor
         else:
             print("Operador no válido")
             return False
 
-    with open(ruta_entrada, encoding=encoding) as archivo_in, \
-         open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out:
-
+    with (
+        open(ruta_entrada, encoding=encoding) as archivo_in,
+        open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out,
+    ):
         lector = csv.reader(archivo_in, delimiter=separador)
         escritor = csv.writer(archivo_out, delimiter=separador)
 
@@ -385,7 +473,12 @@ def eliminar_por_condicion(ruta_entrada, ruta_salida, columna, operador, valor, 
             indice = columnas.index(columna)
         except ValueError:
             print("Error: columna no encontrada")
-            registrar_operacion(os.path.basename(ruta_entrada), "DELETE", 0, "ERROR - columna no encontrada")
+            registrar_operacion(
+                os.path.basename(ruta_entrada),
+                "DELETE",
+                0,
+                "ERROR - columna no encontrada",
+            )
             return
 
         for fila in lector:
@@ -396,9 +489,16 @@ def eliminar_por_condicion(ruta_entrada, ruta_salida, columna, operador, valor, 
 
     print("Filtrado por condición completado")
     if registros_eliminados > 0:
-        registrar_operacion(os.path.basename(ruta_entrada), "DELETE", registros_eliminados, "OK")
+        registrar_operacion(
+            os.path.basename(ruta_entrada), "DELETE", registros_eliminados, "OK"
+        )
     else:
-        registrar_operacion(os.path.basename(ruta_entrada), "DELETE", 0, f"ERROR - no se encontraron coincidencias en {columna}")
+        registrar_operacion(
+            os.path.basename(ruta_entrada),
+            "DELETE",
+            0,
+            f"ERROR - no se encontraron coincidencias en {columna}",
+        )
 
 
 def sanitizar_dataset(ruta_entrada, ruta_salida, separador="\t", encoding="utf-8"):
@@ -412,12 +512,13 @@ def sanitizar_dataset(ruta_entrada, ruta_salida, separador="\t", encoding="utf-8
         "latitud_invalida": 0,
         "longitud_invalida": 0,
         "fecha_invalida": 0,
-        "nombre_cientifico_vacio": 0
+        "nombre_cientifico_vacio": 0,
     }
 
-    with open(ruta_entrada, encoding=encoding) as archivo_in, \
-         open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out:
-
+    with (
+        open(ruta_entrada, encoding=encoding) as archivo_in,
+        open(ruta_salida, "w", newline="", encoding=encoding) as archivo_out,
+    ):
         lector = csv.reader(archivo_in, delimiter=separador)
         escritor = csv.writer(archivo_out, delimiter=separador)
 
@@ -431,7 +532,12 @@ def sanitizar_dataset(ruta_entrada, ruta_salida, separador="\t", encoding="utf-8
             idx_nombre = columnas.index("scientificName")
         except ValueError:
             print("Error: faltan columnas necesarias para validar")
-            registrar_operacion(os.path.basename(ruta_entrada), "DELETE", 0, "ERROR - columnas faltantes")
+            registrar_operacion(
+                os.path.basename(ruta_entrada),
+                "DELETE",
+                0,
+                "ERROR - columnas faltantes",
+            )
             return
 
         for fila in lector:
@@ -447,7 +553,7 @@ def sanitizar_dataset(ruta_entrada, ruta_salida, separador="\t", encoding="utf-8
                     lat = float(fila[idx_lat])
                     if lat < -90 or lat > 90:
                         motivos["latitud_invalida"] += 1
-                except:
+                except (ValueError, TypeError):
                     motivos["latitud_invalida"] += 1
 
             if fila[idx_lon] != "":
@@ -455,7 +561,7 @@ def sanitizar_dataset(ruta_entrada, ruta_salida, separador="\t", encoding="utf-8
                     lon = float(fila[idx_lon])
                     if lon < -180 or lon > 180:
                         motivos["longitud_invalida"] += 1
-                except:
+                except (ValueError, TypeError):
                     motivos["longitud_invalida"] += 1
 
             if fila[idx_fecha] == "":
@@ -476,11 +582,18 @@ def sanitizar_dataset(ruta_entrada, ruta_salida, separador="\t", encoding="utf-8
     for motivo, cantidad in motivos.items():
         print(f"- {motivo}: {cantidad}")
 
-    registrar_operacion(os.path.basename(ruta_entrada), "DELETE", eliminados, "OK" if eliminados > 0 else "ERROR - no se eliminaron registros")
+    registrar_operacion(
+        os.path.basename(ruta_entrada),
+        "DELETE",
+        eliminados,
+        "OK" if eliminados > 0 else "ERROR - no se eliminaron registros",
+    )
 
 
 # ========================= PUNTO 7F =======================================
-def agregar_registro_con_log(numero_dataset, tipo_dataset, carpeta_destino="processed_datasets"):
+def agregar_registro_con_log(
+    numero_dataset, tipo_dataset, carpeta_destino="processed_datasets"
+):
     """
     Lee un dataset original, solicita un nuevo registro por teclado, lo valida y lo
     agrega al archivo en processed_datasets.
@@ -503,7 +616,9 @@ def agregar_registro_con_log(numero_dataset, tipo_dataset, carpeta_destino="proc
     separador = dataset["separador"]
 
     os.makedirs(carpeta_destino, exist_ok=True)
-    archivo_destino = os.path.join(carpeta_destino, os.path.basename(str(origen_dataset)))
+    archivo_destino = os.path.join(
+        carpeta_destino, os.path.basename(str(origen_dataset))
+    )
 
     with open(origen_dataset, "r", encoding="utf-8") as f:
         reader = csv.reader(f, delimiter=separador)
@@ -520,7 +635,12 @@ def agregar_registro_con_log(numero_dataset, tipo_dataset, carpeta_destino="proc
         print("El registro tiene errores y no puede ser insertado")
         for error in errores:
             print(" -", error)
-        registrar_operacion(os.path.basename(str(origen_dataset)), "INSERT", 0, "ERROR - " + "; ".join(errores))
+        registrar_operacion(
+            os.path.basename(str(origen_dataset)),
+            "INSERT",
+            0,
+            "ERROR - " + "; ".join(errores),
+        )
         return
 
     registro = preparar_para_csv(registro, tipo_dataset)
@@ -529,7 +649,9 @@ def agregar_registro_con_log(numero_dataset, tipo_dataset, carpeta_destino="proc
 
     existe = os.path.exists(archivo_destino)
     with open(archivo_destino, "a", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=encabezados, delimiter=separador, extrasaction="ignore")
+        writer = csv.DictWriter(
+            f, fieldnames=encabezados, delimiter=separador, extrasaction="ignore"
+        )
         if not existe:
             writer.writeheader()
         writer.writerow(registro)

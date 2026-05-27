@@ -1,5 +1,7 @@
 import csv
-# AUXILIAR 
+
+# AUXILIAR
+
 
 def _abrir_dataset(dataset):
     """
@@ -13,6 +15,7 @@ def _abrir_dataset(dataset):
         - Devuelve el archivo abierto para que csv.DictReader pueda leerlo.
     """
     return open(dataset["ruta"], encoding=dataset["encoding"], newline="")
+
 
 def _obtener_columnas(dataset):
     """
@@ -262,7 +265,7 @@ def ejercicio2I(dataset, columna, tipo):
             return {
                 "min": min(nums),
                 "max": max(nums),
-                "promedio": sum(nums) / len(nums)
+                "promedio": sum(nums) / len(nums),
             }
 
         # COORDINATE
@@ -277,18 +280,12 @@ def ejercicio2I(dataset, columna, tipo):
             if not nums:
                 return {"error": f"No hay coordenadas validas en '{columna}'"}
 
-            return {
-                "min": min(nums),
-                "max": max(nums)
-            }
+            return {"min": min(nums), "max": max(nums)}
 
         # TEXT
         elif tipo == "text":
             largos = [len(v) for v in valores]
-            return {
-                "min": min(largos),
-                "max": max(largos)
-            }
+            return {"min": min(largos), "max": max(largos)}
 
         else:
             return {"error": "Tipo invalido (usar numeric, coordinate o text)"}

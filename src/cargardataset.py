@@ -1,7 +1,6 @@
-import csv
 from pathlib import Path
 
-#  CONFIGURACION DE DATASETS 
+#  CONFIGURACION DE DATASETS
 
 DATASETS_CONFIG = {
     1: {
@@ -24,10 +23,11 @@ DATASETS_CONFIG = {
         "archivo": "observations.csv",
         "separador": ",",
         "encoding": "utf-8",
-    }
+    },
 }
 
-#  FUNCIONES BASE         
+#  FUNCIONES BASE
+
 
 def _obtener_ruta_proyecto() -> Path:
     """
@@ -58,7 +58,12 @@ def cargar_dataset(numero: int):
         raise ValueError("El numero debe ser 1, 2 o 3")
 
     config = DATASETS_CONFIG[numero]
-    ruta = _obtener_ruta_proyecto() / "raw_datasets" / config["carpeta"] / config["archivo"]
+    ruta = (
+        _obtener_ruta_proyecto()
+        / "raw_datasets"
+        / config["carpeta"]
+        / config["archivo"]
+    )
 
     if not ruta.exists():
         raise FileNotFoundError(f"No se encontro el archivo: {ruta}")
@@ -67,10 +72,11 @@ def cargar_dataset(numero: int):
         "ruta": ruta,
         "separador": config["separador"],
         "encoding": config["encoding"],
-        "nombre": config["nombre"]
+        "nombre": config["nombre"],
     }
 
-# INTERFAZ (solo para notebook) 
+
+# INTERFAZ (solo para notebook)
 def seleccionar_y_cargar_dataset():
     """
     Pide al usuario seleccionar uno de los datasets y retorna su configuracion.
