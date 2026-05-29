@@ -1,5 +1,67 @@
+import streamlit as st
+
+# ==========================================
+# ARCHIVO PRINCIPAL DE LA APLICACION
+# ==========================================
+# Ejecutar con:
+# streamlit run src/1_Inicio.py
+# ==========================================
+
+# Titulo de la aplicacion
+st.title("Aplicacion de Analisis de Biodiversidad")
+
+# Proposito de la aplicacion
+st.header("Proposito de la aplicacion")
+st.write("""
+La aplicacion tiene como objetivo facilitar el analisis de datos de biodiversidad,
+permitiendo la consulta y visualizacion de registros de especies animales y vegetales. 
+Estos datos se encuentran estructurados de acuerdo al estandar Darwin Core y se procesan 
+para detectar inconsistencias, validar coordenadas y mejorar la calidad de los datos.
+""")
+
+# Importancia del analisis de datos de biodiversidad
+st.header("Importancia del analisis de datos de biodiversidad")
+st.write("""
+Los datos de biodiversidad son fundamentales para la investigacion cientifica, la conservacion
+y la gestion de los ecosistemas. A traves del analisis de estos datos, se pueden identificar
+patrones en la distribucion de especies, cambios en los ecosistemas y los efectos del cambio
+climatico sobre la fauna y la flora.
+
+El acceso y analisis de estos datos tambien apoya la toma de decisiones para politicas publicas
+y la conservacion de especies en peligro de extincion.
+""")
+
+# Explicacion sobre Darwin Core
+st.header("¿Que es Darwin Core?")
+st.write("""
+Darwin Core es un estandar internacional que se utiliza para representar y compartir datos
+relacionados con la biodiversidad. Este estandar facilita el intercambio de informacion sobre
+especies, ubicacion geografica, fechas de observacion y otros detalles biologicos entre 
+instituciones cientificas a nivel global.
+
+Algunos de los campos mas comunes incluyen:
+
+- Nombre cientifico de la especie
+- Ubicacion geografica (latitud, longitud)
+- Fecha y hora de la observacion
+- Institucion proveedora de los datos
+""")
+
+# Instrucciones basicas de uso de la aplicacion
+st.header("Instrucciones basicas de uso")
+st.write("""
+- **Navegacion entre paginas:** Use el menu lateral izquierdo para navegar entre las distintas secciones de la aplicacion. 
+  Las opciones incluyen:
+    - **Inicio:** Informacion sobre la aplicacion y su proposito.
+    - **Estado del sistema:** Visualizacion de los logs de operaciones realizados.
+    - **Busqueda (en construccion):** Futura seccion para busqueda avanzada en los datos.
+    - **Visualizacion (en construccion):** Futura seccion para generar visualizaciones interactivas.
+    
+- **Consulta de informacion:** En esta aplicacion podra consultar registros de especies, explorar el estado del sistema y validar datos de biodiversidad.
+""")
+# =====================================================
+
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -15,9 +77,9 @@ st.title("🔍 Búsqueda de Registros de Biodiversidad")
 
 # ==================== CARGA ====================
 if "dataset_numero" not in st.session_state or st.session_state.dataset_numero is None:
-    st.warning("⚠️ Por favor selecciona un dataset en la página **Inicio**.")
-    st.stop()
-
+    st.warning(" Por favor selecciona un dataset en la página **Inicio**.")
+    st.stop()  # Detiene la ejecución de la página
+# CARGA
 config = cargar_dataset(st.session_state.get("dataset_numero"))
 df = pd.read_csv(
     config["ruta"],
@@ -28,20 +90,7 @@ df = pd.read_csv(
 
 st.success(f"Dataset activo: **{config['nombre']}** - {len(df):,} registros")
 
-# ==================== MANEJO DE FECHAS ====================
-if "eventDate" in df.columns:
-    try:
-        if config["nombre"] == "iNaturalist":
-            df["eventDate_dt"] = pd.to_datetime(
-                df["eventDate"], errors="coerce", utc=True
-            )
-            df["eventDate_dt"] = df["eventDate_dt"].dt.tz_convert(None)
-        else:
-            df["eventDate_dt"] = pd.to_datetime(df["eventDate"], errors="coerce")
-    except:
-        df["eventDate_dt"] = pd.to_datetime(df["eventDate"], errors="coerce")
-
-# ==================== FILTROS ====================
+# FILTROS
 st.sidebar.header("🔎 Filtros de Búsqueda")
 
 columna_busqueda = st.sidebar.selectbox("Buscar en columna:", df.columns.tolist())
@@ -71,32 +120,9 @@ province_selected = st.sidebar.multiselect(
 
 observador = st.sidebar.text_input("Observador (recordedBy):")
 
-# Rango de Fechas (solo si hay datos)
-fecha_desde = fecha_hasta = None
-if "eventDate_dt" in df.columns:
-    valid = df["eventDate_dt"].dropna()
-    if not valid.empty:
-        st.sidebar.subheader("📅 Rango de Fechas")
-        min_d = valid.min().date()
-        max_d = valid.max().date()
-
-        if min_d.year < 1900:
-            min_d = datetime(1900, 1, 1).date()
-        if max_d.year > datetime.today().year + 10:
-            max_d = datetime.today().date()
-
-        col1, col2 = st.sidebar.columns(2)
-        fecha_desde = col1.date_input(
-            "Desde", value=min_d, min_value=min_d, max_value=max_d
-        )
-        fecha_hasta = col2.date_input(
-            "Hasta", value=max_d, min_value=min_d, max_value=max_d
-        )
-
-# ==================== APLICAR FILTROS (con descarte de vacíos) ====================
+# APLICAR FILTROS SOLO SI HAY ALGO
 filtered_df = df.copy()
 
-# Texto libre
 if texto_buscar and texto_buscar.strip():
     filtered_df = filtered_df[
         filtered_df[columna_busqueda]
@@ -104,19 +130,15 @@ if texto_buscar and texto_buscar.strip():
         .str.contains(texto_buscar.strip(), case=False, na=False)
     ]
 
-# Nombre Científico
 if scientific_selected:
     filtered_df = filtered_df[filtered_df["scientificName"].isin(scientific_selected)]
 
-# País
 if country_selected and country_col in filtered_df.columns:
     filtered_df = filtered_df[filtered_df[country_col].isin(country_selected)]
 
-# Provincia
 if province_selected and "stateProvince" in filtered_df.columns:
     filtered_df = filtered_df[filtered_df["stateProvince"].isin(province_selected)]
 
-# Observador
 if observador and observador.strip() and "recordedBy" in filtered_df.columns:
     filtered_df = filtered_df[
         filtered_df["recordedBy"]
@@ -124,17 +146,7 @@ if observador and observador.strip() and "recordedBy" in filtered_df.columns:
         .str.contains(observador.strip(), case=False, na=False)
     ]
 
-# Fechas
-if fecha_desde and fecha_hasta and "eventDate_dt" in filtered_df.columns:
-    try:
-        filtered_df = filtered_df[
-            (filtered_df["eventDate_dt"] >= pd.to_datetime(fecha_desde))
-            & (filtered_df["eventDate_dt"] <= pd.to_datetime(fecha_hasta))
-        ]
-    except:
-        pass
-
-# ==================== MOSTRAR RESULTADOS ====================
+# MOSTRAR
 st.subheader(f"📋 Resultados: **{len(filtered_df)}** registros encontrados")
 
 if len(filtered_df) == 0:
@@ -150,49 +162,22 @@ cols = [
     "recordedBy",
     "decimalLatitude",
     "decimalLongitude",
-    "basisOfRecord",
 ]
 cols = [c for c in cols if c in filtered_df.columns]
 
-# Paginación
-page_size = 50
-total_pages = (len(filtered_df) - 1) // page_size + 1 if not filtered_df.empty else 1
-page = st.number_input("Página", min_value=1, max_value=total_pages, value=1, step=1)
+st.dataframe(filtered_df[cols], use_container_width=True, hide_index=True)
 
-start = (page - 1) * page_size
-end = start + page_size
-st.dataframe(
-    filtered_df[cols].iloc[start:end], use_container_width=True, hide_index=True
-)
-
-# ==================== DETALLE DE REGISTRO ====================
-st.subheader("🔍 Acceder al detalle de un registro")
-if not filtered_df.empty:
-    indice = st.number_input(
-        "Seleccione el índice del registro",
-        min_value=0,
-        max_value=len(filtered_df) - 1,
-        value=0,
-        step=1,
-    )
-    st.json(filtered_df.iloc[indice].to_dict())
-
-# ==================== EXPORTAR ====================
+# Exportar y Resumen (mismo de antes)
 if st.button("📥 Exportar resultados como CSV") and not filtered_df.empty:
-    fecha_actual = datetime.now().strftime("%Y-%m-%d_%H%M")
     csv = filtered_df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "Descargar CSV",
-        csv,
-        f"busqueda_{config['nombre']}_{fecha_actual}.csv",
-        "text/csv",
+        "Descargar CSV", csv, f"busqueda_{config['nombre']}.csv", "text/csv"
     )
 
-# ==================== RESUMEN (2.E) ====================
-st.subheader("📊 Resumen del subconjunto filtrado")
+st.subheader("📊 Resumen")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric(
-    "Especies Únicas",
+    "Especies",
     filtered_df["scientificName"].nunique()
     if "scientificName" in filtered_df.columns
     else 0,
